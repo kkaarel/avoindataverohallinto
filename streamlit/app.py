@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import os
 from pandas.api.types import (
     is_categorical_dtype,
     is_datetime64_any_dtype,
@@ -122,9 +123,16 @@ def read_csv(link):
 
 def main():
 
+    #dfs = []
+    #for link in df_filttered['Lähde']:
+    #    dfs.append(read_csv(link))
+
     dfs = []
-    for link in df_filttered['Lähde']:
-        dfs.append(read_csv(link))
+    for filename in os.listdir('data/'):
+        if filename.endswith('.csv'):
+            filepath = os.path.join('data/', filename)
+            dfs.append(read_csv(filepath))
+    
 
     df = pd.concat(dfs)
 
