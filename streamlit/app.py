@@ -117,37 +117,45 @@ with st.expander("Esimerkki haku"):
 def read_csv(link):
     return pd.read_csv(link, sep=';', encoding='ISO-8859-1', decimal=',')
 
-dfs = []
-for link in df_filttered['Lähde']:
-    dfs.append(read_csv(link))
-
-df = pd.concat(dfs)
-
-filtered_df = filter_dataframe(df)
-st.write(f"Rivimäärä: {filtered_df.shape[0]}")
-st.dataframe(filtered_df)
 
 
 
+def main():
+
+    dfs = []
+    for link in df_filttered['Lähde']:
+        dfs.append(read_csv(link))
+
+    df = pd.concat(dfs)
+
+    filtered_df = filter_dataframe(df)
+    st.write(f"Rivimäärä: {filtered_df.shape[0]}")
+    st.dataframe(filtered_df)
 
 
 
-st.write(
-    """Avoin data: [here](https://www.vero.fi/tietoa-verohallinnosta/tilastot/avoin_dat/)
-
-    """
-)
-
-st.write(
-    """Kehittäjä Kaarel Kõrvemaa: [here](https://www.linkedin.com/in/korvemaa/)
-
-    """
-)
 
 
-st.caption(
-    """This app is a reference the blog [here](https://blog.streamlit.io/auto-generate-a-dataframe-filtering-ui-in-streamlit-with-filter_dataframe/)
-    and walks you through one example of how the Streamlit
-    Data Science Team builds add-on functions to Streamlit.
-    """
-)
+
+    st.write(
+        """Avoin data: [here](https://www.vero.fi/tietoa-verohallinnosta/tilastot/avoin_dat/)
+
+        """
+    )
+
+    st.write(
+        """Kehittäjä Kaarel Kõrvemaa: [here](https://www.linkedin.com/in/korvemaa/)
+
+        """
+    )
+
+
+    st.caption(
+        """This app is a reference the blog [here](https://blog.streamlit.io/auto-generate-a-dataframe-filtering-ui-in-streamlit-with-filter_dataframe/)
+        and walks you through one example of how the Streamlit
+        Data Science Team builds add-on functions to Streamlit.
+        """
+    )
+
+if __name__ == "__main__":
+    main()
