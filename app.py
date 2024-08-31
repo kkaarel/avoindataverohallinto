@@ -125,7 +125,9 @@ for link in df_filttered['Lähde']:
 
 df = pd.concat(dfs)
 
-st.dataframe(filter_dataframe(df))
+filtered_df = filter_dataframe(df)
+st.write(f"Rivimäärä: {filtered_df.shape[0]}")
+st.dataframe(filtered_df)
 
 
 
