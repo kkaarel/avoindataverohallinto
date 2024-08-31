@@ -7,6 +7,7 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_object_dtype,
 )
+import zipfile
 
 from getfiles import get_csv_link
 
@@ -123,15 +124,12 @@ def read_csv(link):
 
 def main():
 
-    #dfs = []
-    #for link in df_filttered['Lähde']:
-    #    dfs.append(read_csv(link))
-
     dfs = []
-    for filename in os.listdir('data/'):
-        if filename.endswith('.csv'):
-            filepath = os.path.join('data/', filename)
-            dfs.append(read_csv(filepath))
+    for link in df_filttered['Lähde']:
+        dfs.append(read_csv(link))
+
+
+
     
 
     df = pd.concat(dfs)
