@@ -7,14 +7,14 @@ from pandas.api.types import (
     is_object_dtype,
 )
 
-st.set_page_config(page_title="Verohallinnon avoin data")
+
 
 from getfiles import get_csv_link
 
 
 
+st.set_page_config(page_title="Verohallinnon avoin data", layout="wide")
 
-st.set_page_config(layout="wide")
 
 
 
