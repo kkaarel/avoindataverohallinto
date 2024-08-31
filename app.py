@@ -6,7 +6,12 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_object_dtype,
 )
+
+st.set_page_config(page_title="Verohallinnon avoin data")
+
 from getfiles import get_csv_link
+
+
 
 
 st.set_page_config(layout="wide")
