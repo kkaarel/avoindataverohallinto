@@ -101,6 +101,8 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 @st.cache_data(ttl=2592000)
 def read_csv(link):
+
+
     return pd.read_csv(link, sep=';', encoding='ISO-8859-1', decimal=',')
 
 
@@ -126,19 +128,18 @@ def main():
     with st.expander("Esimerkki haku"):
         st.image("Screenshot.png", caption="Esimerkki tulos")
 
+
+
     dfs = []
     for link in df_filttered['Lähde']:
         dfs.append(read_csv(link))
-
-
-
-    
 
     df = pd.concat(dfs)
 
     filtered_df = filter_dataframe(df)
     st.write(f"Rivimäärä: {filtered_df.shape[0]}")
-    st.dataframe(filtered_df)
+    with st.spinner('Ladataan dataa...'):
+        st.dataframe(filtered_df)
 
 
 
