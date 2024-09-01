@@ -103,7 +103,7 @@ min_value = df_filttered['Vuosi'].min()
 
 
 
-st.title("Appista löytyy yritysten: verotettava tulo, maksuunpannut verot, ennakkot yhteensä, veronpalautukset ja jäännöstverot ", anchor=False)
+st.title("Apistä löytyy yritysten: verotettava tulo, maksuunpannut verot, ennakkot yhteensä, veronpalautukset ja jäännöstverot ", anchor=False)
 st.title(f"Ainesto on vuosilta: {min_value} - {max_value}", anchor=False)
 
 
