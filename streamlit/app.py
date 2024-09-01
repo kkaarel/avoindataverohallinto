@@ -85,6 +85,8 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     user_date_input = tuple(map(pd.to_datetime, user_date_input))
                     start_date, end_date = user_date_input
                     df = df.loc[df[column].between(start_date, end_date)]
+
+
             else:
                 user_text_input = right.text_input(
                     f"Teksti haku {column}",
@@ -101,8 +103,6 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 @st.cache_data(ttl=2592000)
 def read_csv(link):
-
-
     return pd.read_csv(link, sep=';', encoding='ISO-8859-1', decimal=',')
 
 
@@ -136,8 +136,13 @@ def main():
 
     df = pd.concat(dfs)
 
+
     filtered_df = filter_dataframe(df)
-    st.write(f"Rivimäärä: {filtered_df.shape[0]}")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.write(f"Rivimäärä: {filtered_df.shape[0]}")
+    col2.write(f"Yritysten määrä: {filtered_df['Y-tunnus | FO-nummer'].nunique()}")
+    col3.write(f"Verotettava tulo yhteensä: {filtered_df['Verotettava tulo | Beskattningsbar inkomst'].sum()}")
+    col4.write(f"Verot yhteensä: {filtered_df['Maksuunpannut verot yhteensä | Debiterade skatter '].sum()}")
 
 
     with st.spinner('Ladataan dataa...'):
