@@ -138,6 +138,8 @@ def main():
 
     filtered_df = filter_dataframe(df)
     st.write(f"Rivimäärä: {filtered_df.shape[0]}")
+
+
     with st.spinner('Ladataan dataa...'):
         st.dataframe(filtered_df)
 
@@ -167,7 +169,7 @@ def main():
 
 
     st.caption(
-        """This app is a reference the blog [here](https://blog.streamlit.io/auto-generate-a-dataframe-filtering-ui-in-streamlit-with-filter_dataframe/)
+        """This app is a reference of a blog [here](https://blog.streamlit.io/auto-generate-a-dataframe-filtering-ui-in-streamlit-with-filter_dataframe/)
         and walks you through one example of how the Streamlit
         Data Science Team builds add-on functions to Streamlit.
         """
