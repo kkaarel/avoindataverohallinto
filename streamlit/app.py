@@ -96,23 +96,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 
-df_filttered = get_csv_link()
-df_filttered = df_filttered[df_filttered['Vuosi'] > '2017']
-max_value = df_filttered['Vuosi'].max()
-min_value = df_filttered['Vuosi'].min()
 
-
-
-st.title("Apistä löytyy yritysten: verotettava tulo, maksuunpannut verot, ennakkot yhteensä, veronpalautukset ja jäännöstverot ", anchor=False)
-st.title(f"Ainesto on vuosilta: {min_value} - {max_value}", anchor=False)
-
-
-with st.expander("Lähteet"):
-    st.dataframe(df_filttered,column_config={'Lähde': st.column_config.LinkColumn()}, hide_index=True)
-
-
-with st.expander("Esimerkki haku"):
-    st.image("Screenshot.png", caption="Esimerkki tulos")
 
 
 @st.cache_data(ttl=2592000)
@@ -123,6 +107,24 @@ def read_csv(link):
 
 
 def main():
+
+    df_filttered = get_csv_link()
+    df_filttered = df_filttered[df_filttered['Vuosi'] > '2017']
+    max_value = df_filttered['Vuosi'].max()
+    min_value = df_filttered['Vuosi'].min()
+
+
+
+    st.title("Apistä löytyy yritysten: verotettava tulo, maksuunpannut verot, ennakkot yhteensä, veronpalautukset ja jäännöstverot ", anchor=False)
+    st.title(f"Ainesto on vuosilta: {min_value} - {max_value}", anchor=False)
+
+
+    with st.expander("Lähteet"):
+        st.dataframe(df_filttered,column_config={'Lähde': st.column_config.LinkColumn()}, hide_index=True)
+
+
+    with st.expander("Esimerkki haku"):
+        st.image("Screenshot.png", caption="Esimerkki tulos")
 
     dfs = []
     for link in df_filttered['Lähde']:
