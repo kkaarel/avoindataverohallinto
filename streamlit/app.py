@@ -155,6 +155,13 @@ def main():
         """
     )
 
+    st.write(
+        """Github: [here](https://github.com/kkaarel/avoindataverohallinto)
+
+        """
+    )
+
+
 
     st.caption(
         """This app is a reference the blog [here](https://blog.streamlit.io/auto-generate-a-dataframe-filtering-ui-in-streamlit-with-filter_dataframe/)
