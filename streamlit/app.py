@@ -126,7 +126,7 @@ def main():
 
 
     with st.expander("Esimerkki haku"):
-        st.image("Screenshot.png", caption="Esimerkki tulos")
+        st.image("https://github.com/kkaarel/avoindataverohallinto/blob/main/streamlit/Screenshot.png?raw=true", caption="Esimerkki tulos")
 
 
 
