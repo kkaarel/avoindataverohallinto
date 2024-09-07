@@ -111,7 +111,7 @@ def read_csv(link):
 def main():
 
     df_filttered = get_csv_link()
-    df_filttered = df_filttered[df_filttered['Vuosi'] > '2017']
+    df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
     max_value = df_filttered['Vuosi'].max()
     min_value = df_filttered['Vuosi'].min()
 
