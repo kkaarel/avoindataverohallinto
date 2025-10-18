@@ -103,36 +103,95 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 def read_csv(link):
     return pd.read_csv(link, sep=';', encoding='ISO-8859-1', decimal=',')
 
+def check_duckdb_data():
+    """Check if data already exists in DuckDB and return it if available"""
+    import duckdb
+    import os
+    
+    # Find DuckDB file path
+    db_paths = [
+        os.path.join(os.path.dirname(__file__), "module_chat", "tax_data.duckdb"),
+        os.path.join(os.path.dirname(__file__), "tax_data.duckdb")
+    ]
+    
+    db_path = None
+    for path in db_paths:
+        if os.path.exists(path):
+            db_path = path
+            break
+    
+    if not db_path:
+        return None
+    
+    try:
+        conn = duckdb.connect(db_path)
+        # Check if tables exist and have data
+        tables = conn.execute("SHOW TABLES").fetchall()
+        if tables:
+            # Get all data from existing tables
+            all_data = []
+            for table in tables:
+                table_name = table[0]
+                data = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
+                all_data.append(data)
+            
+            conn.close()
+            return pd.concat(all_data, ignore_index=True) if all_data else None
+    except Exception:
+        return None
+    
+    return None
+
 
 
 
 def main():
-    df_filttered = get_csv_link()
-    df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
-    max_value = df_filttered['Vuosi'].max()
-    min_value = df_filttered['Vuosi'].min()
+    # Try DuckDB first
+    df_from_duckdb = check_duckdb_data()
+    
+    if df_from_duckdb is not None:
+       # st.info("Using data from DuckDB database")
+        df = df_from_duckdb
+        # Get year range from the data
+        max_value = df['Verovuosi | Skatteår'].max()
+        min_value = df['Verovuosi | Skatteår'].min()
+        df_filttered = df
 
+    else:
+       # st.info("DuckDB data not available, downloading from CSVs")
+        df_filttered = get_csv_link()
+        df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
+        max_value = df_filttered['Vuosi'].max()
+        min_value = df_filttered['Vuosi'].min()
+        
+        dfs = []
+        for link in df_filttered['Lähde']:
+            dfs.append(read_csv(link))
+        
+        df = pd.concat(dfs)
+
+
+
+        with st.expander("Lähteet"):
+            st.dataframe(df_filttered,column_config={'Lähde': st.column_config.LinkColumn()}, hide_index=True)
+
+        with st.expander("Esimerkki haku"):
+            st.image("https://github.com/kkaarel/avoindataverohallinto/blob/main/streamlit/Screenshot.png?raw=true", caption="Esimerkki tulos")
+
+        dfs = []
+        for link in df_filttered['Lähde']:
+            dfs.append(read_csv(link))
+        df = pd.concat(dfs)
     st.title("Apistä löytyy yritysten: verotettava tulo, maksuunpannut verot, ennakkot yhteensä, veronpalautukset ja jäännöstverot ", anchor=False)
     st.title(f"Ainesto on vuosilta: {min_value} - {max_value}", anchor=False)
-
-    with st.expander("Lähteet"):
-        st.dataframe(df_filttered,column_config={'Lähde': st.column_config.LinkColumn()}, hide_index=True)
-
-    with st.expander("Esimerkki haku"):
-        st.image("https://github.com/kkaarel/avoindataverohallinto/blob/main/streamlit/Screenshot.png?raw=true", caption="Esimerkki tulos")
-
-    dfs = []
-    for link in df_filttered['Lähde']:
-        dfs.append(read_csv(link))
-
-    df = pd.concat(dfs)
+    
 
     filtered_df = filter_dataframe(df)
     col1, col2, col3, col4 = st.columns(4)
     col1.write(f"Rivimäärä: {filtered_df.shape[0]}")
     col2.write(f"Yritysten määrä: {filtered_df['Y-tunnus | FO-nummer'].nunique()}")
     col3.write(f"Verotettava tulo yhteensä: {filtered_df['Verotettava tulo | Beskattningsbar inkomst'].sum()}")
-    col4.write(f"Verot yhteensä: {filtered_df['Maksuunpannut verot yhteensä | Debiterade skatter '].sum()}")
+    col4.write(f"Verot yhteensä: {filtered_df['Maksuunpannut verot yhteensä | Debiterade skatter'].sum()}")
 
     with st.spinner('Ladataan dataa...'):
         st.dataframe(filtered_df)
