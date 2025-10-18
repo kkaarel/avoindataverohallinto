@@ -193,7 +193,7 @@ def main():
     col3.write(f"Verotettava tulo yhteensä: {filtered_df['Verotettava tulo | Beskattningsbar inkomst'].sum()}")
     col4.write(f"Verot yhteensä: {filtered_df['Maksuunpannut verot yhteensä | Debiterade skatter'].sum()}")
 
-    with st.spinner('Ladataan dataa...'):
+    with st.spinner('Ladataan dataa...',show_time=True):
         st.dataframe(filtered_df)
 
     st.write(
