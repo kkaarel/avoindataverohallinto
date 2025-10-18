@@ -137,6 +137,10 @@ class SqlChatbot:
     @utils.enable_chat_history
     def main(self):
 
+        if "messages" not in st.session_state:
+            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
+
         st.divider()
         
         db_uri = 'USE_TAX_DB'
