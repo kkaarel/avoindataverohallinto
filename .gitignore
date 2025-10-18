@@ -3,6 +3,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+streamlit/.streamlit/secrets.toml
 
 # C extensions
 *.so

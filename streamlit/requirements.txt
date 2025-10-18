@@ -1,5 +1,12 @@
-
 beautifulsoup4==4.12.3
 pandas==2.2.2
 requests==2.32.3
-streamlit==1.38.0
+streamlit
+duckdb
+langchain-community
+sqlalchemy
+duckdb-engine
+langchain-openai
+langchain-core
+openai
+fastembed
