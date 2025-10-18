@@ -154,8 +154,8 @@ def main():
        # st.info("Using data from DuckDB database")
         df = df_from_duckdb
         # Get year range from the data
-        max_value = df['Verovuosi | Skatteår'].max()
-        min_value = df['Verovuosi | Skatteår'].min()
+        max_value = int(df['Verovuosi | Skatteår'].max())
+        min_value = int(df['Verovuosi | Skatteår'].min())
         df.drop(columns=['BUSINESSID','TOIMIALA','COMPANYNAME'], inplace=True)
         df_filttered = df
 
@@ -164,8 +164,8 @@ def main():
         df_filttered = get_csv_link()
         df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
         
-        max_value = df_filttered['Vuosi'].max()
-        min_value = df_filttered['Vuosi'].min()
+        max_value = int(df_filttered['Vuosi'].max())
+        min_value = int(df_filttered['Vuosi'].min())
         
         dfs = []
         for link in df_filttered['Lähde']:
