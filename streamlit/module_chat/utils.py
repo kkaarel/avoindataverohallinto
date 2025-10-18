@@ -9,31 +9,13 @@ logger = get_logger('Langchain-Chatbot')
 
 #decorator
 def enable_chat_history(func):
-    try:
-        if st.secrets["AZURE_OPENAI_API_KEY"]:
-            # to clear chat history after swtching chatbot
-            current_page = func.__qualname__
-            if "current_page" not in st.session_state:
-                st.session_state["current_page"] = current_page
-            if st.session_state["current_page"] != current_page:
-                try:
-                    st.cache_resource.clear()
-                    del st.session_state["current_page"]
-                    del st.session_state["messages"]
-                except:
-                    pass
-
-            # to show chat history on ui
-            if "messages" not in st.session_state:
-                st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-            for msg in st.session_state["messages"]:
-                st.chat_message(msg["role"]).write(msg["content"])
-    except KeyError:
-        # If secrets are not available, still initialize messages
-        if "messages" not in st.session_state:
-            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-        for msg in st.session_state["messages"]:
-            st.chat_message(msg["role"]).write(msg["content"])
+    # Always initialize messages first, regardless of secrets
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+    
+    # Show chat history on UI
+    for msg in st.session_state["messages"]:
+        st.chat_message(msg["role"]).write(msg["content"])
 
     def execute(*args, **kwargs):
         func(*args, **kwargs)
