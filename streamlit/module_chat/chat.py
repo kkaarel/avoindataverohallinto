@@ -107,6 +107,7 @@ class SqlChatbot:
             tax_data_2023: {schema_2023}
             
             Generate a SQL query to answer the question. Only return the SQL query, nothing else.
+            When Joining data, always use Ytunnus | FO-nummer as the join key.
             """
             
             # Get SQL query from LLM
