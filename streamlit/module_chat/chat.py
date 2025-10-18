@@ -135,12 +135,14 @@ class SqlChatbot:
 """
 
 
-    @utils.enable_chat_history
     def main(self):
-
+        # Initialize messages if not exists
         if "messages" not in st.session_state:
             st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
+        # Show chat history on UI
+        for msg in st.session_state["messages"]:
+            st.chat_message(msg["role"]).write(msg["content"])
 
         st.divider()
         

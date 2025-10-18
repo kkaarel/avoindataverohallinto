@@ -92,7 +92,8 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     f"Teksti haku {column}",
                 )
                 if user_text_input:
-                    df = df[df[column].str.contains(user_text_input)]
+                    # Handle NaN values by filling them with empty string before text search
+                    df = df[df[column].fillna('').str.contains(user_text_input, case=False, na=False)]
 
     return df
 
