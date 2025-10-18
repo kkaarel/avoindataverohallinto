@@ -155,12 +155,14 @@ def main():
         # Get year range from the data
         max_value = df['Verovuosi | Skatteår'].max()
         min_value = df['Verovuosi | Skatteår'].min()
+        df.drop(columns=['BUSINESSID','TOIMIALA','COMPANYNAME'], inplace=True)
         df_filttered = df
 
     else:
        # st.info("DuckDB data not available, downloading from CSVs")
         df_filttered = get_csv_link()
         df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
+        
         max_value = df_filttered['Vuosi'].max()
         min_value = df_filttered['Vuosi'].min()
         
