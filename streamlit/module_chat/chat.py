@@ -23,9 +23,26 @@ class SqlChatbot:
         if db_uri == 'USE_TAX_DB':
             # Use the official DuckDB connection method
             from sqlalchemy import create_engine, text
+            import os
             
-            # Simple connection string
-            engine = create_engine("duckdb:///tax_data.duckdb")
+            # Get the absolute path to the DuckDB file
+            # Try both possible locations
+            db_paths = [
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "tax_data.duckdb"),  # streamlit/tax_data.duckdb
+                os.path.join(os.path.dirname(__file__), "tax_data.duckdb")  # streamlit/module_chat/tax_data.duckdb
+            ]
+            
+            db_path = None
+            for path in db_paths:
+                if os.path.exists(path):
+                    db_path = path
+                    break
+            
+            if not db_path:
+                raise FileNotFoundError("Could not find tax_data.duckdb file")
+            
+            # Simple connection string with absolute path
+            engine = create_engine(f"duckdb:///{db_path}")
             
             # Test the connection and get tables
             with engine.connect() as conn:
@@ -56,10 +73,26 @@ class SqlChatbot:
     def setup_duckdb_chat(_self):
         """Create a custom DuckDB chat interface"""
         import duckdb
+        import os
         
         def query_duckdb(question):
-            # Connect to DuckDB
-            conn = duckdb.connect('tax_data.duckdb')
+            # Get the absolute path to the DuckDB file
+            db_paths = [
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "tax_data.duckdb"),  # streamlit/tax_data.duckdb
+                os.path.join(os.path.dirname(__file__), "tax_data.duckdb")  # streamlit/module_chat/tax_data.duckdb
+            ]
+            
+            db_path = None
+            for path in db_paths:
+                if os.path.exists(path):
+                    db_path = path
+                    break
+            
+            if not db_path:
+                return "Error: Could not find tax_data.duckdb file"
+            
+            # Connect to DuckDB with absolute path
+            conn = duckdb.connect(db_path)
             
             # Get table schemas for context
             schema_2022 = conn.execute("DESCRIBE tax_data_2022").fetchall()
