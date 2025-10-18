@@ -9,13 +9,25 @@ logger = get_logger('Langchain-Chatbot')
 
 #decorator
 def enable_chat_history(func):
-    # Always initialize messages, regardless of API key
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-    
-    # Show chat history on UI
-    for msg in st.session_state["messages"]:
-        st.chat_message(msg["role"]).write(msg["content"])
+    if st.secrets["AZURE_OPENAI_API_KEY"]:
+
+        # to clear chat history after swtching chatbot
+        current_page = func.__qualname__
+        if "current_page" not in st.session_state:
+            st.session_state["current_page"] = current_page
+        if st.session_state["current_page"] != current_page:
+            try:
+                st.cache_resource.clear()
+                del st.session_state["current_page"]
+                del st.session_state["messages"]
+            except:
+                pass
+
+        # to show chat history on ui
+        if "messages" not in st.session_state:
+            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+        for msg in st.session_state["messages"]:
+            st.chat_message(msg["role"]).write(msg["content"])
 
     def execute(*args, **kwargs):
         func(*args, **kwargs)
@@ -32,47 +44,12 @@ def display_msg(msg, author):
     st.chat_message(author).write(msg)
 
 def choose_custom_azure_openai_key():
-    azure_openai_api_key = st.secrets.get("AZURE_OPENAI_API_KEY")
-    azure_openai_endpoint = st.secrets.get("AZURE_OPENAI_ENDPOINT")
-    azure_openai_api_version = st.secrets.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
-    azure_openai_deployment_name = st.secrets.get("AZURE_OPENAI_DEPLOYMENT_NAME")
-
-    if not azure_openai_api_key:
-        st.error("Please add your Azure OpenAI API key to continue.")
-        st.info("Obtain your key from Azure OpenAI Studio")
-        st.stop()
-    
-    if not azure_openai_endpoint:
-        st.error("Please add your Azure OpenAI endpoint to continue.")
-        st.info("Find your endpoint in Azure OpenAI Studio")
-        st.stop()
-    
-    if not azure_openai_deployment_name:
-        st.error("Please add your Azure OpenAI deployment name to continue.")
-        st.info("Find your deployment name in Azure OpenAI Studio")
-        st.stop()
+    azure_openai_api_key = st.secrets["AZURE_OPENAI_API_KEY"]
+    azure_openai_endpoint = st.secrets["AZURE_OPENAI_ENDPOINT"]
+    azure_openai_api_version = st.secrets["AZURE_OPENAI_API_VERSION"]
+    azure_openai_deployment_name = st.secrets["AZURE_OPENAI_DEPLOYMENT_NAME"]
 
     model = azure_openai_deployment_name
-    try:
-        client = openai.AzureOpenAI(
-            api_key=azure_openai_api_key,
-            api_version=azure_openai_api_version,
-            azure_endpoint=azure_openai_endpoint
-        )
-        
-        # For Azure OpenAI, we typically use the deployment name as the model
-        model = st.sidebar.selectbox(
-            label="Model Deployment",
-            options=[azure_openai_deployment_name],
-            key="SELECTED_AZURE_OPENAI_MODEL"
-        )
-    except openai.AuthenticationError as e:
-        st.error(f"Authentication error: {e}")
-        st.stop()
-    except Exception as e:
-        print(e)
-        st.error("Something went wrong. Please try again later.")
-        st.stop()
     return model, azure_openai_api_key, azure_openai_endpoint, azure_openai_api_version
 
 def configure_llm():
