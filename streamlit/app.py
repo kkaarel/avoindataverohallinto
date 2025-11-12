@@ -55,12 +55,34 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             left.write("↳")
             # Treat columns with < 10 unique values as categorical
             if isinstance(df[column].dtype, pd.CategoricalDtype) or df[column].nunique() < 10:
+                # Filter out NaN values from unique values
+                unique_values = df[column].dropna().unique().tolist()
+                # Convert numeric whole numbers to integers for display
+                display_values = []
+                value_mapping = {}  # Map display values to original values
+                for val in unique_values:
+                    if isinstance(val, (int, float)):
+                        # Check if it's a whole number
+                        if isinstance(val, float) and val.is_integer():
+                            display_val = int(val)
+                        elif isinstance(val, int):
+                            display_val = val
+                        else:
+                            display_val = val
+                        display_values.append(display_val)
+                        value_mapping[display_val] = val
+                    else:
+                        display_values.append(val)
+                        value_mapping[val] = val
+                
                 user_cat_input = right.multiselect(
                     f"Arvo: {column}",
-                    df[column].unique(),
-                    default=list(df[column].unique()),
+                    display_values,
+                    default=display_values,
                 )
-                df = df[df[column].isin(user_cat_input)]
+                # Convert selected display values back to original values for filtering
+                original_selected = [value_mapping[val] for val in user_cat_input]
+                df = df[df[column].isin(original_selected)]
             elif is_numeric_dtype(df[column]):
                 _min = float(df[column].min())
                 _max = float(df[column].max())
@@ -129,15 +151,42 @@ def check_duckdb_data():
         # Check if tables exist and have data
         tables = conn.execute("SHOW TABLES").fetchall()
         if tables:
-            # Get all data from existing tables
-            all_data = []
-            for table in tables:
-                table_name = table[0]
-                data = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
-                all_data.append(data)
+            table_names = [table[0] for table in tables]
+            
+            # Try using SQL UNION first (more efficient)
+            try:
+                if len(table_names) == 1:
+                    # Single table - just select from it
+                    query = f"SELECT * FROM {table_names[0]}"
+                    df = conn.execute(query).fetchdf()
+                else:
+                    # Multiple tables - use UNION to combine and remove duplicates
+                    union_parts = [f"SELECT * FROM {name}" for name in table_names]
+                    query = " UNION ".join(union_parts)
+                    df = conn.execute(query).fetchdf()
+            except Exception:
+                # Fallback: if UNION fails (e.g., schema differences), use pandas concat
+                all_data = []
+                for table_name in table_names:
+                    data = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
+                    all_data.append(data)
+                df = pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
             
             conn.close()
-            return pd.concat(all_data, ignore_index=True) if all_data else None
+            
+            if df.empty:
+                return None
+            
+            # Additional deduplication using pandas (in case UNION didn't catch all duplicates)
+            # Use a combination of key columns if available, otherwise use all columns
+            if 'Y-tunnus | FO-nummer' in df.columns and 'Verovuosi | Skatteår' in df.columns:
+                # Deduplicate based on company ID and year
+                df = df.drop_duplicates(subset=['Y-tunnus | FO-nummer', 'Verovuosi | Skatteår'], keep='first')
+            else:
+                # Fallback: deduplicate on all columns
+                df = df.drop_duplicates(keep='first')
+            
+            return df if not df.empty else None
     except Exception:
         return None
     
@@ -156,13 +205,19 @@ def main():
         # Get year range from the data
         max_value = int(df['Verovuosi | Skatteår'].max())
         min_value = int(df['Verovuosi | Skatteår'].min())
+
         df.drop(columns=['BUSINESSID','TOIMIALA','COMPANYNAME'], inplace=True)
+
         df_filttered = df
 
     else:
        # st.info("DuckDB data not available, downloading from CSVs")
         df_filttered = get_csv_link()
         df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
+        
+        # Convert Vuosi to numeric, filtering out non-numeric values
+        df_filttered['Vuosi'] = pd.to_numeric(df_filttered['Vuosi'], errors='coerce')
+        df_filttered = df_filttered.dropna(subset=['Vuosi'])
         
         max_value = int(df_filttered['Vuosi'].max())
         min_value = int(df_filttered['Vuosi'].min())

@@ -95,7 +95,7 @@ class SqlChatbot:
             conn = duckdb.connect(db_path)
             
             # Get table schemas for context
-            schema_2022 = conn.execute("DESCRIBE tax_data_2022").fetchall()
+            schema_2024 = conn.execute("DESCRIBE tax_data_2024").fetchall()
             schema_2023 = conn.execute("DESCRIBE tax_data_2023").fetchall()
             
             # Create a prompt for the LLM
@@ -103,7 +103,7 @@ class SqlChatbot:
             You are a SQL expert. Based on this question: "{question}"
             
             Database schema:
-            tax_data_2022: {schema_2022}
+            tax_data_2024: {schema_2024}
             tax_data_2023: {schema_2023}
             
             Generate a SQL query to answer the question. Only return the SQL query, nothing else.
@@ -128,11 +128,11 @@ class SqlChatbot:
     def enhance_response_with_context(self, user_query, db_response):
         """Return the database response without web search enhancement"""
         return f"""
-**Analyysitulokset:**
-{db_response}
+        **Analyysitulokset:**
+        {db_response}
 
-*Huomio! Tämä analyysi perustuu Suomen verotietoihin vuosilta 2022–2023.*
-"""
+        *Huomio! Tämä analyysi perustuu Suomen verotietoihin vuosilta 2023–2024.*
+        """
 
 
     def main(self):
