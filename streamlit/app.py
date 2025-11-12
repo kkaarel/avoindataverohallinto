@@ -202,9 +202,17 @@ def main():
         if df_from_duckdb is not None:
            # st.info("Using data from DuckDB database")
             df = df_from_duckdb
-            # Get year range from the data
-            max_value = int(df['Verovuosi | Skatteår'].max())
-            min_value = int(df['Verovuosi | Skatteår'].min())
+            # Get year range from the data, handling NaN
+            verovuosi_max = df['Verovuosi | Skatteår'].max()
+            verovuosi_min = df['Verovuosi | Skatteår'].min()
+            
+            if pd.isna(verovuosi_max) or pd.isna(verovuosi_min):
+                st.error("No valid year data found in database")
+                st.stop()
+                return
+            
+            max_value = int(verovuosi_max)
+            min_value = int(verovuosi_min)
 
             df.drop(columns=['BUSINESSID','TOIMIALA','COMPANYNAME'], inplace=True)
 
@@ -219,8 +227,17 @@ def main():
             df_filttered['Vuosi'] = pd.to_numeric(df_filttered['Vuosi'], errors='coerce')
             df_filttered = df_filttered.dropna(subset=['Vuosi'])
             
-            max_value = int(df_filttered['Vuosi'].max())
-            min_value = int(df_filttered['Vuosi'].min())
+            # Get max/min values, handling NaN
+            vuosi_max = df_filttered['Vuosi'].max()
+            vuosi_min = df_filttered['Vuosi'].min()
+            
+            if pd.isna(vuosi_max) or pd.isna(vuosi_min) or df_filttered.empty:
+                st.error("No valid data found")
+                st.stop()
+                return
+            
+            max_value = int(vuosi_max)
+            min_value = int(vuosi_min)
             
             dfs = []
             for link in df_filttered['Lähde']:
