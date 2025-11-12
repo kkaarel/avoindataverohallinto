@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import os
+import warnings
 from pandas.api.types import (
 
     is_datetime64_any_dtype,
@@ -10,6 +11,9 @@ from pandas.api.types import (
 import zipfile
 
 from getfiles import get_csv_link
+
+# Suppress DuckDB engine warnings about index reflection
+warnings.filterwarnings('ignore', category=UserWarning, module='duckdb_engine')
 
 
 

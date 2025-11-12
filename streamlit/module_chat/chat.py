@@ -1,5 +1,6 @@
 import sys
 import os
+import warnings
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import utils
 import streamlit as st
@@ -10,6 +11,9 @@ from sqlalchemy.pool import StaticPool
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_community.callbacks import StreamlitCallbackHandler
 from langchain_community.utilities.sql_database import SQLDatabase
+
+# Suppress DuckDB engine warnings about index reflection
+warnings.filterwarnings('ignore', category=UserWarning, module='duckdb_engine')
 
 # Tracking elements moved to class methods to avoid module-level execution
 
@@ -44,11 +48,15 @@ class SqlChatbot:
             
             # Configure engine for read-only concurrent access
             # Use StaticPool with read_only=True to allow multiple users
-            engine = create_engine(
-                f"duckdb:///{db_path}",
-                poolclass=StaticPool,
-                connect_args={'read_only': True}
-            )
+            # Suppress reflection warnings by using echo=False
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=UserWarning, module='duckdb_engine')
+                engine = create_engine(
+                    f"duckdb:///{db_path}",
+                    poolclass=StaticPool,
+                    connect_args={'read_only': True},
+                    echo=False
+                )
             
             # Test the connection and get tables
             with engine.connect() as conn:
@@ -167,22 +175,35 @@ class SqlChatbot:
             st.chat_message("user").write(user_query)
 
             with st.chat_message("assistant"):
-                # First get the database response
-                #st_cb = StreamlitCallbackHandler(st.container())
-                #result = agent.invoke(
-                #    {"input": user_query},
-                #    {"callbacks": [st_cb]}
-               # )
-                result = agent.invoke({"input": user_query})
-                db_response = result["output"]
-                
-                
-                # Format the response
-                enhanced_response = self.enhance_response_with_context(user_query, db_response)
-                
-                st.session_state.messages.append({"role": "assistant", "content": enhanced_response})
-                st.write(enhanced_response)
-                utils.print_qa(SqlChatbot, user_query, enhanced_response)
+                try:
+                    # First get the database response
+                    #st_cb = StreamlitCallbackHandler(st.container())
+                    #result = agent.invoke(
+                    #    {"input": user_query},
+                    #    {"callbacks": [st_cb]}
+                   # )
+                    result = agent.invoke({"input": user_query})
+                    db_response = result["output"]
+                    
+                    
+                    # Format the response
+                    enhanced_response = self.enhance_response_with_context(user_query, db_response)
+                    
+                    st.session_state.messages.append({"role": "assistant", "content": enhanced_response})
+                    st.write(enhanced_response)
+                    utils.print_qa(SqlChatbot, user_query, enhanced_response)
+                except Exception as e:
+                    # Handle any errors gracefully, including WebSocket errors
+                    # Ignore WebSocket closed errors as they're harmless when users navigate away
+                    error_type = type(e).__name__
+                    if 'WebSocket' in error_type or 'StreamClosed' in error_type:
+                        # These errors occur when users navigate away - they're harmless
+                        # Just show a generic message
+                        error_msg = "Connection interrupted. Please try your query again."
+                    else:
+                        error_msg = f"An error occurred while processing your query: {str(e)}"
+                    st.error(error_msg)
+                    st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 
 if __name__ == "__main__":

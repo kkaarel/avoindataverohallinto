@@ -1,9 +1,13 @@
 import os
 import openai
 import streamlit as st
+import warnings
 from streamlit.logger import get_logger
 from langchain_openai import AzureChatOpenAI
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+
+# Suppress DuckDB engine warnings about index reflection
+warnings.filterwarnings('ignore', category=UserWarning, module='duckdb_engine')
 
 logger = get_logger('Langchain-Chatbot')
 
@@ -42,13 +46,14 @@ def choose_custom_azure_openai_key():
 
 def configure_llm():
     # Remove the radio button selection - just use Azure OpenAI directly
+    # Disable streaming since it's not being used and causes WebSocket errors on page navigation
     llm = AzureChatOpenAI(
         azure_deployment=st.secrets["AZURE_OPENAI_DEPLOYMENT_NAME"],
         azure_endpoint=st.secrets["AZURE_OPENAI_ENDPOINT"],
         api_key=st.secrets["AZURE_OPENAI_API_KEY"],
         api_version=st.secrets.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"),
         temperature=0,
-        streaming=True
+        streaming=False  # Disabled to prevent WebSocket errors when users navigate away
     )
     return llm
 
