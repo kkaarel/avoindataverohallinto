@@ -5,6 +5,7 @@ import utils
 import streamlit as st
 from pathlib import Path
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_community.callbacks import StreamlitCallbackHandler
@@ -41,8 +42,12 @@ class SqlChatbot:
             if not db_path:
                 raise FileNotFoundError("Could not find tax_data.duckdb file")
             
-            # Simple connection string with absolute path
-            engine = create_engine(f"duckdb:///{db_path}")
+            # Configure engine to avoid connection conflicts with DuckDB
+            # Use StaticPool to ensure single connection
+            engine = create_engine(
+                f"duckdb:///{db_path}",
+                poolclass=StaticPool
+            )
             
             # Test the connection and get tables
             with engine.connect() as conn:
@@ -146,9 +151,13 @@ class SqlChatbot:
 
         st.divider()
         
-        db_uri = 'USE_TAX_DB'
-        db = self.setup_db(db_uri)
-        agent = self.setup_sql_agent(db)
+        # Cache database connection and agent in session state
+        if "sql_agent" not in st.session_state:
+            db_uri = 'USE_TAX_DB'
+            db = self.setup_db(db_uri)
+            st.session_state["sql_agent"] = self.setup_sql_agent(db)
+        
+        agent = st.session_state["sql_agent"]
 
         user_query = st.chat_input(placeholder="Ask me anything!")
 

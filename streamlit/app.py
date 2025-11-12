@@ -147,46 +147,44 @@ def check_duckdb_data():
         return None
     
     try:
-        conn = duckdb.connect(db_path)
-        # Check if tables exist and have data
-        tables = conn.execute("SHOW TABLES").fetchall()
-        if tables:
-            table_names = [table[0] for table in tables]
-            
-            # Try using SQL UNION first (more efficient)
-            try:
-                if len(table_names) == 1:
-                    # Single table - just select from it
-                    query = f"SELECT * FROM {table_names[0]}"
-                    df = conn.execute(query).fetchdf()
+        with duckdb.connect(db_path) as conn:
+            # Check if tables exist and have data
+            tables = conn.execute("SHOW TABLES").fetchall()
+            if tables:
+                table_names = [table[0] for table in tables]
+                
+                # Try using SQL UNION first (more efficient)
+                try:
+                    if len(table_names) == 1:
+                        # Single table - just select from it
+                        query = f"SELECT * FROM {table_names[0]}"
+                        df = conn.execute(query).fetchdf()
+                    else:
+                        # Multiple tables - use UNION to combine and remove duplicates
+                        union_parts = [f"SELECT * FROM {name}" for name in table_names]
+                        query = " UNION ".join(union_parts)
+                        df = conn.execute(query).fetchdf()
+                except Exception:
+                    # Fallback: if UNION fails (e.g., schema differences), use pandas concat
+                    all_data = []
+                    for table_name in table_names:
+                        data = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
+                        all_data.append(data)
+                    df = pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
+                
+                if df.empty:
+                    return None
+                
+                # Additional deduplication using pandas (in case UNION didn't catch all duplicates)
+                # Use a combination of key columns if available, otherwise use all columns
+                if 'Y-tunnus | FO-nummer' in df.columns and 'Verovuosi | Skatteår' in df.columns:
+                    # Deduplicate based on company ID and year
+                    df = df.drop_duplicates(subset=['Y-tunnus | FO-nummer', 'Verovuosi | Skatteår'], keep='first')
                 else:
-                    # Multiple tables - use UNION to combine and remove duplicates
-                    union_parts = [f"SELECT * FROM {name}" for name in table_names]
-                    query = " UNION ".join(union_parts)
-                    df = conn.execute(query).fetchdf()
-            except Exception:
-                # Fallback: if UNION fails (e.g., schema differences), use pandas concat
-                all_data = []
-                for table_name in table_names:
-                    data = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
-                    all_data.append(data)
-                df = pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
-            
-            conn.close()
-            
-            if df.empty:
-                return None
-            
-            # Additional deduplication using pandas (in case UNION didn't catch all duplicates)
-            # Use a combination of key columns if available, otherwise use all columns
-            if 'Y-tunnus | FO-nummer' in df.columns and 'Verovuosi | Skatteår' in df.columns:
-                # Deduplicate based on company ID and year
-                df = df.drop_duplicates(subset=['Y-tunnus | FO-nummer', 'Verovuosi | Skatteår'], keep='first')
-            else:
-                # Fallback: deduplicate on all columns
-                df = df.drop_duplicates(keep='first')
-            
-            return df if not df.empty else None
+                    # Fallback: deduplicate on all columns
+                    df = df.drop_duplicates(keep='first')
+                
+                return df if not df.empty else None
     except Exception:
         return None
     
@@ -196,50 +194,60 @@ def check_duckdb_data():
 
 
 def main():
-    # Try DuckDB first
-    df_from_duckdb = check_duckdb_data()
-    
-    if df_from_duckdb is not None:
-       # st.info("Using data from DuckDB database")
-        df = df_from_duckdb
-        # Get year range from the data
-        max_value = int(df['Verovuosi | Skatteår'].max())
-        min_value = int(df['Verovuosi | Skatteår'].min())
+    # Check if data is already cached in session state
+    if 'df' not in st.session_state or 'min_value' not in st.session_state or 'max_value' not in st.session_state:
+        # Try DuckDB first
+        df_from_duckdb = check_duckdb_data()
+        
+        if df_from_duckdb is not None:
+           # st.info("Using data from DuckDB database")
+            df = df_from_duckdb
+            # Get year range from the data
+            max_value = int(df['Verovuosi | Skatteår'].max())
+            min_value = int(df['Verovuosi | Skatteår'].min())
 
-        df.drop(columns=['BUSINESSID','TOIMIALA','COMPANYNAME'], inplace=True)
+            df.drop(columns=['BUSINESSID','TOIMIALA','COMPANYNAME'], inplace=True)
 
-        df_filttered = df
+            df_filttered = df
 
+        else:
+           # st.info("DuckDB data not available, downloading from CSVs")
+            df_filttered = get_csv_link()
+            df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
+            
+            # Convert Vuosi to numeric, filtering out non-numeric values
+            df_filttered['Vuosi'] = pd.to_numeric(df_filttered['Vuosi'], errors='coerce')
+            df_filttered = df_filttered.dropna(subset=['Vuosi'])
+            
+            max_value = int(df_filttered['Vuosi'].max())
+            min_value = int(df_filttered['Vuosi'].min())
+            
+            dfs = []
+            for link in df_filttered['Lähde']:
+                dfs.append(read_csv(link))
+            
+            df = pd.concat(dfs)
+
+            with st.expander("Lähteet"):
+                st.dataframe(df_filttered,column_config={'Lähde': st.column_config.LinkColumn()}, hide_index=True)
+
+            with st.expander("Esimerkki haku"):
+                st.image("https://github.com/kkaarel/avoindataverohallinto/blob/main/streamlit/Screenshot.png?raw=true", caption="Esimerkki tulos")
+
+            dfs = []
+            for link in df_filttered['Lähde']:
+                dfs.append(read_csv(link))
+            df = pd.concat(dfs)
+        
+        # Cache data in session state
+        st.session_state['df'] = df
+        st.session_state['min_value'] = min_value
+        st.session_state['max_value'] = max_value
     else:
-       # st.info("DuckDB data not available, downloading from CSVs")
-        df_filttered = get_csv_link()
-        df_filttered = df_filttered[df_filttered['Vuosi'] > '2021']
-        
-        # Convert Vuosi to numeric, filtering out non-numeric values
-        df_filttered['Vuosi'] = pd.to_numeric(df_filttered['Vuosi'], errors='coerce')
-        df_filttered = df_filttered.dropna(subset=['Vuosi'])
-        
-        max_value = int(df_filttered['Vuosi'].max())
-        min_value = int(df_filttered['Vuosi'].min())
-        
-        dfs = []
-        for link in df_filttered['Lähde']:
-            dfs.append(read_csv(link))
-        
-        df = pd.concat(dfs)
-
-
-
-        with st.expander("Lähteet"):
-            st.dataframe(df_filttered,column_config={'Lähde': st.column_config.LinkColumn()}, hide_index=True)
-
-        with st.expander("Esimerkki haku"):
-            st.image("https://github.com/kkaarel/avoindataverohallinto/blob/main/streamlit/Screenshot.png?raw=true", caption="Esimerkki tulos")
-
-        dfs = []
-        for link in df_filttered['Lähde']:
-            dfs.append(read_csv(link))
-        df = pd.concat(dfs)
+        # Use cached data
+        df = st.session_state['df']
+        min_value = st.session_state['min_value']
+        max_value = st.session_state['max_value']
     st.title("Apistä löytyy yritysten: verotettava tulo, maksuunpannut verot, ennakkot yhteensä, veronpalautukset ja jäännöstverot ", anchor=False)
     st.title(f"Ainesto on vuosilta: {min_value} - {max_value}", anchor=False)
     
