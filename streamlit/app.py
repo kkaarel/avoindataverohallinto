@@ -227,12 +227,18 @@ def main():
             df_filttered['Vuosi'] = pd.to_numeric(df_filttered['Vuosi'], errors='coerce')
             df_filttered = df_filttered.dropna(subset=['Vuosi'])
             
+            # Check if dataframe is empty first
+            if df_filttered.empty:
+                st.error("No valid data found")
+                st.stop()
+                return
+            
             # Get max/min values, handling NaN
             vuosi_max = df_filttered['Vuosi'].max()
             vuosi_min = df_filttered['Vuosi'].min()
             
-            if pd.isna(vuosi_max) or pd.isna(vuosi_min) or df_filttered.empty:
-                st.error("No valid data found")
+            if pd.isna(vuosi_max) or pd.isna(vuosi_min):
+                st.error("No valid year data found")
                 st.stop()
                 return
             
