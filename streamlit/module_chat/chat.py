@@ -42,11 +42,12 @@ class SqlChatbot:
             if not db_path:
                 raise FileNotFoundError("Could not find tax_data.duckdb file")
             
-            # Configure engine to avoid connection conflicts with DuckDB
-            # Use StaticPool to ensure single connection
+            # Configure engine for read-only concurrent access
+            # Use StaticPool with read_only=True to allow multiple users
             engine = create_engine(
                 f"duckdb:///{db_path}",
-                poolclass=StaticPool
+                poolclass=StaticPool,
+                connect_args={'read_only': True}
             )
             
             # Test the connection and get tables
@@ -96,8 +97,8 @@ class SqlChatbot:
             if not db_path:
                 return "Error: Could not find tax_data.duckdb file"
             
-            # Connect to DuckDB with absolute path
-            conn = duckdb.connect(db_path)
+            # Connect to DuckDB with absolute path in read-only mode for concurrent access
+            conn = duckdb.connect(db_path, read_only=True)
             
             # Get table schemas for context
             schema_2024 = conn.execute("DESCRIBE tax_data_2024").fetchall()

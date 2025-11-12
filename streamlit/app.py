@@ -126,6 +126,7 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 def read_csv(link):
     return pd.read_csv(link, sep=';', encoding='ISO-8859-1', decimal=',')
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour to reduce concurrent access
 def check_duckdb_data():
     """Check if data already exists in DuckDB and return it if available"""
     import duckdb
@@ -147,7 +148,8 @@ def check_duckdb_data():
         return None
     
     try:
-        with duckdb.connect(db_path) as conn:
+        # Use read-only mode to allow concurrent access
+        with duckdb.connect(db_path, read_only=True) as conn:
             # Check if tables exist and have data
             tables = conn.execute("SHOW TABLES").fetchall()
             if tables:
