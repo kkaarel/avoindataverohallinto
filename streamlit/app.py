@@ -289,7 +289,8 @@ def main():
     col4.write(f"Verot yhteensä: {filtered_df['Maksuunpannut verot yhteensä | Debiterade skatter'].sum()}")
 
     with st.spinner('Ladataan dataa...',show_time=True):
-        st.dataframe(filtered_df)
+        order_by = filtered_df.sort_values(by='Verotettava tulo | Beskattningsbar inkomst', ascending=False)
+        st.dataframe(order_by)
 
     st.write(
         """Avoin data: [here](https://www.vero.fi/tietoa-verohallinnosta/tilastot/avoin_dat/)
